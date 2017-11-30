@@ -14,8 +14,10 @@ module Irbrc
   class << self
 
     def load_rc
-      init unless File.exists? rc_path
-      load rc_path if File.exists? rc_path
+      if rc_path
+        init unless File.exists? rc_path
+        load rc_path if File.exists? rc_path
+      end
     end
 
 
@@ -141,7 +143,12 @@ module Irbrc
 
 
     def parse_repo str = nil
-      str = `git remote -v` unless str
+      begin
+        str = `git remote -v` unless str
+      rescue
+        # bail
+        return nil
+      end
 
       repos = str.split("\n").map(&:split).map do |line|
         source, repo = line[1].split ':'
