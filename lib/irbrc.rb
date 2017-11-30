@@ -14,22 +14,46 @@ module Irbrc
   class << self
 
     def load_rc
-      unless File.exists? rc_path
-        if File.exists? LOCAL_FILE
-          if agree("Move existing rc: #{LOCAL_FILE}")
-            File.rename LOCAL_FILE, rc_path
-            link_rc
-          else
-            link_rc reverse: true
-          end
-        elsif agree('Create irbrc')
-          create_rc
+      init unless File.exists? rc_path
+      load rc_path if File.exists? rc_path
+    end
+
+
+    def init
+      if File.exists? LOCAL_FILE
+        if rc_path == File.realpath(LOCAL_FILE)
+          # already linked, no-op
+        elsif agree("Move existing rc: #{LOCAL_FILE}")
+          File.rename LOCAL_FILE, rc_path
           link_rc
+        else
+          link_rc reverse: true
+        end
+      elsif agree('Create irbrc')
+        create_rc
+        link_rc
+      end
+
+      # add auto-load to ~/.irbrc
+      global_rc = [ Dir.home, '.irbrc' ].join File::SEPARATOR
+      require_cmd = "require 'irbrc'"
+
+      add_require = if File.exists? global_rc
+        add_msg = "Add `#{require_cmd}` to #{global_rc}"
+        File.read(global_rc) !~ /\W#{require_cmd}\W/ and agree(add_msg)
+      else
+        true
+      end
+
+      if add_require
+        File.open(global_rc, 'a') do |fh|
+          fh.write "\n"
+          fh.write "# `load_rc` to reload your project's local .irbrc\n"
+          fh.write "#{require_cmd}\n\n"
         end
       end
 
-      load rc_path if File.exists? rc_path
-      # eval(File.read(rc_path))
+      nil
     end
 
 
@@ -60,7 +84,8 @@ module Irbrc
 
       FileUtils.mkpath File.dirname rc_path
       File.open(rc_path, 'w') do |fh|
-        fh.write "# IRBRC for #{parse_repo[:repo]}\n"
+        repo = parse_repo
+        fh.write "# IRBRC for #{parse_repo[:source]}:#{repo[:repo]}\n"
         fh.write "\n\n"
       end
 
