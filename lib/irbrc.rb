@@ -8,7 +8,6 @@ module Irbrc
     Dir.home,
     '.irb/rc',
   ].join File::SEPARATOR
-  LOCAL_FILE = '.irbrc'
 
 
   class << self
@@ -22,17 +21,17 @@ module Irbrc
 
 
     def init
-      if File.exists? LOCAL_FILE
-        if rc_path == File.realpath(LOCAL_FILE)
+      if File.exists? local_rc
+        if rc_path == File.realpath(local_rc)
           # already linked, no-op
-        elsif agree("Move existing rc: #{LOCAL_FILE}")
-          File.rename LOCAL_FILE, rc_path
+        elsif agree("Move existing rc: #{local_rc}")
+          File.rename local_rc, rc_path
           link_rc
         else
           link_rc reverse: true
         end
       elsif agree('Create irbrc')
-        create_rc
+        create_rc unless File.exists? rc_path
         link_rc
       end
 
@@ -41,6 +40,7 @@ module Irbrc
 
       nil
     end
+
 
     # add auto-load to ~/.irbrc
     def init_global_rc
@@ -66,7 +66,12 @@ module Irbrc
 
 
     def git_ignore
-      ignore_path = [ '.git', 'info', 'exclude' ].join File::SEPARATOR
+      ignore_path = [
+        project_root,
+        '.git',
+        'info',
+        'exclude'
+      ].join File::SEPARATOR
       add_required = if File.exists? ignore_path
         msg = "Add .irbrc to #{ignore_path}"
         File.read(ignore_path) !~ /\W\.irbrc\W/ and agree(msg)
@@ -83,20 +88,20 @@ module Irbrc
 
 
     def localize opts = {}
-      if File.exists? LOCAL_FILE
-        if opts[:force] or File.realpath(LOCAL_FILE) == rc_path
-          unlink LOCAL_FILE
+      if File.exists? local_rc
+        if opts[:force] or File.realpath(local_rc) == rc_path
+          unlink local_rc
         else
-          unlink LOCAL_FILE if agree "Remove local rc: #{LOCAL_FILE}"
+          unlink local_rc if agree "Remove local rc: #{local_rc}"
         end
       end
 
-      File.rename rc_path, LOCAL_FILE unless File.exists? LOCAL_FILE
+      File.rename rc_path, local_rc unless File.exists? local_rc
     end
 
 
     def remove_rc opts = {}
-      unlink rc_path, LOCAL_FILE
+      unlink rc_path, local_rc
     end
 
 
@@ -121,10 +126,10 @@ module Irbrc
     def link_rc opts = {}
       if opts[:reverse]
         unlink rc_path if opts[:force]
-        File.symlink File.realpath(LOCAL_FILE), rc_path
+        File.symlink File.realpath(local_rc), rc_path
       else
-        unlink LOCAL_FILE if opts[:force]
-        File.symlink rc_path, LOCAL_FILE
+        unlink local_rc if opts[:force]
+        File.symlink rc_path, local_rc
       end
 
       nil
@@ -166,6 +171,19 @@ module Irbrc
       end
 
       repos.first
+    end
+
+
+    def local_rc
+      [
+        project_root,
+        '.irbrc'
+      ].join File::SEPARATOR
+    end
+
+
+    def project_root
+      `git rev-parse --show-toplevel`.chomp
     end
 
 
