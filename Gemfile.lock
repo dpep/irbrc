@@ -2,7 +2,7 @@ PATH
   remote: .
   specs:
     irbrc (0.0.1)
-      highline
+      highline (~> 1.7)
 
 GEM
   remote: https://rubygems.org/
