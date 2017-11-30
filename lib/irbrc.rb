@@ -34,26 +34,48 @@ module Irbrc
         link_rc
       end
 
-      # add auto-load to ~/.irbrc
+      init_global_rc
+      git_ignore
+
+      nil
+    end
+
+    # add auto-load to ~/.irbrc
+    def init_global_rc
       global_rc = [ Dir.home, '.irbrc' ].join File::SEPARATOR
       require_cmd = "require 'irbrc'"
 
-      add_require = if File.exists? global_rc
+      add_required = if File.exists? global_rc
         add_msg = "Add `#{require_cmd}` to #{global_rc}"
         File.read(global_rc) !~ /\W#{require_cmd}\W/ and agree(add_msg)
       else
         true
       end
 
-      if add_require
+      if add_required
         File.open(global_rc, 'a') do |fh|
           fh.write "\n"
           fh.write "# `load_rc` to reload your project's .irbrc\n"
           fh.write "#{require_cmd}\n\n"
         end
       end
+    end
 
-      nil
+
+    def git_ignore
+      ignore_path = [ '.git', 'info', 'exclude' ].join File::SEPARATOR
+      add_required = if File.exists? ignore_path
+        msg = "Add .irbrc to #{ignore_path}"
+        File.read(ignore_path) !~ /\W\.irbrc\W/ and agree(msg)
+      else
+        add_required = true
+      end
+
+      if add_required
+        File.open(ignore_path, 'a') do |fh|
+          fh.write "\n.irbrc\n"
+        end
+      end
     end
 
 
