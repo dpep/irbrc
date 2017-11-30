@@ -48,7 +48,7 @@ module Irbrc
       if add_require
         File.open(global_rc, 'a') do |fh|
           fh.write "\n"
-          fh.write "# `load_rc` to reload your project's local .irbrc\n"
+          fh.write "# `load_rc` to reload your project's .irbrc\n"
           fh.write "#{require_cmd}\n\n"
         end
       end
