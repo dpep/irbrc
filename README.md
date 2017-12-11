@@ -11,5 +11,5 @@ Load per project irbrc files
 ```
 require 'irbrc'
 
-reload_rc
+load_rc
 ```
