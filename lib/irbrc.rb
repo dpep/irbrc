@@ -3,7 +3,7 @@ require 'highline'
 
 
 module Irbrc
-  VERSION = '0.0.1'
+  VERSION = '0.0.2'
   BASE_DIR = [
     Dir.home,
     '.irb/rc',
@@ -11,6 +11,7 @@ module Irbrc
 
 
   class << self
+
 
     def load_rc
       if rc_path
@@ -36,7 +37,7 @@ module Irbrc
       end
 
       init_global_rc
-      git_ignore
+      git_ignore if is_git?
 
       nil
     end
@@ -87,12 +88,12 @@ module Irbrc
     end
 
 
-    def localize opts = {}
+    def localize
       if File.exists? local_rc
-        if opts[:force] or File.realpath(local_rc) == rc_path
+        if File.realpath(local_rc) == rc_path
           unlink local_rc
         else
-          unlink local_rc if agree "Remove local rc: #{local_rc}"
+          unlink local_rc if agree "Overwrite local rc: #{local_rc}"
         end
       end
 
@@ -100,7 +101,7 @@ module Irbrc
     end
 
 
-    def remove_rc opts = {}
+    def remove_rc
       unlink rc_path, local_rc
     end
 
@@ -113,10 +114,16 @@ module Irbrc
       end
 
       FileUtils.mkpath File.dirname rc_path
-      File.open(rc_path, 'w') do |fh|
+      msg = if is_git?
         repo = parse_repo
-        fh.write "# IRBRC for #{parse_repo[:source]}:#{repo[:repo]}\n"
-        fh.write "\n\n"
+        "# IRBRC for #{parse_repo[:source]}:#{repo[:repo]}\n"
+      else
+        "# IRBRC"
+      end
+
+
+      File.open(rc_path, 'w') do |fh|
+        fh.write "#{msg}\n\n"
       end
 
       nil
@@ -128,8 +135,10 @@ module Irbrc
         unlink rc_path if opts[:force]
         File.symlink File.realpath(local_rc), rc_path
       else
-        unlink local_rc if opts[:force]
-        File.symlink rc_path, local_rc
+        if realpath(local_rc) != realpath(rc_path)
+          unlink local_rc if opts[:force]
+          File.symlink rc_path, local_rc
+        end
       end
 
       nil
@@ -137,23 +146,21 @@ module Irbrc
 
 
     def rc_path
-      repo = parse_repo
-
-      [
-        BASE_DIR,
-        repo[:source],
-        repo[:repo].sub(/#{File::SEPARATOR}/, '.') + '.rc',
-      ].join File::SEPARATOR
+      if is_git?
+        repo = parse_repo
+        [
+          BASE_DIR,
+          repo[:source],
+          repo[:repo].gsub(/#{File::SEPARATOR}/, '.') + '.rc',
+        ].join File::SEPARATOR
+      else
+        local_rc
+      end
     end
 
 
     def parse_repo str = nil
-      begin
-        str = `git remote -v` unless str
-      rescue
-        # bail
-        return nil
-      end
+      str = git_cmd "remote -v" unless str
 
       repos = str.split("\n").map(&:split).map do |line|
         source, repo = line[1].split ':'
@@ -183,7 +190,7 @@ module Irbrc
 
 
     def project_root
-      `git rev-parse --show-toplevel`.chomp
+      git_cmd("rev-parse --show-toplevel") || Dir.pwd
     end
 
 
@@ -198,6 +205,33 @@ module Irbrc
       paths.select do |path|
         1 == File.unlink(path) if File.exists? path or File.symlink? path
       end
+    end
+
+
+    def realpath path
+      File.realpath path if File.exists? path
+    end
+
+
+    @@is_git = {}
+    def is_git? path = Dir.pwd
+      is_git = @@is_git[path]
+
+      if is_git.nil?
+        # not cached yet
+        dir = `git rev-parse --show-toplevel 2>/dev/null`.chomp
+        is_git = !dir.empty?
+
+        dir = is_git ? dir : path
+        @@is_git[dir] = is_git
+      end
+
+      is_git
+    end
+
+
+    def git_cmd cmd
+      `git #{cmd} 2>/dev/null`.chomp if is_git?
     end
 
 
