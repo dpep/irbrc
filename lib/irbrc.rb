@@ -16,7 +16,10 @@ module Irbrc
     def load_rc
       if rc_path
         init unless File.exists? rc_path
-        load rc_path if File.exists? rc_path
+
+        if File.exists? rc_path and rc_path != global_rc
+          load rc_path
+        end
       end
     end
 
@@ -26,6 +29,7 @@ module Irbrc
         if rc_path == File.realpath(local_rc)
           # already linked, no-op
         elsif agree("Move existing rc: #{local_rc}")
+          FileUtils.mkpath File.dirname rc_path
           File.rename local_rc, rc_path
           link_rc
         else
@@ -45,7 +49,6 @@ module Irbrc
 
     # add auto-load to ~/.irbrc
     def init_global_rc
-      global_rc = [ Dir.home, '.irbrc' ].join File::SEPARATOR
       require_cmd = "require 'irbrc'"
 
       add_required = if File.exists? global_rc
@@ -163,6 +166,8 @@ module Irbrc
       str = git_cmd "remote -v" unless str
 
       repos = str.split("\n").map(&:split).map do |line|
+        next unless line.first.match /^origin/
+
         source, repo = line[1].split ':'
         source.sub! /^.*@/, ''
         source.sub! /\.(com|org)$/, ''
@@ -171,10 +176,10 @@ module Irbrc
           source: source,
           repo: repo,
         }
-      end.uniq
+      end.compact.uniq
 
       if repos.count != 1
-        raise Error.new "parse error: #{str}"
+        raise Exception.new "parse error: #{str}"
       end
 
       repos.first
@@ -186,6 +191,11 @@ module Irbrc
         project_root,
         '.irbrc'
       ].join File::SEPARATOR
+    end
+
+
+    def global_rc
+      [ Dir.home, '.irbrc' ].join File::SEPARATOR
     end
 
 
