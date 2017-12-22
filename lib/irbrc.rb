@@ -1,5 +1,4 @@
 require 'fileutils'
-require 'highline'
 
 
 module Irbrc
@@ -204,9 +203,25 @@ module Irbrc
     end
 
 
-    def agree msg
-      HighLine.new.agree("#{msg}?  [Y/n]") do |q|
-        yield q if block_given?
+    def agree msg, opts = {}
+      # ask yes or no question and return true/false
+      # optional 'default' arg
+
+      default = if opts.has_key? :default
+        opts[:default] ? 'y' : 'n'
+      else
+        ''
+      end
+
+      loop do
+        puts "#{msg.chomp '?'}?  %s" % '[y/n]'.sub(default, default.upcase)
+        res = gets.strip.downcase
+        res = default if res.empty?
+        if ['y', 'yes', 'n', 'no'].include? res
+          return ['y', 'yes'].include? res
+        else
+          puts "\ninvalid response\n\n"
+        end
       end
     end
 

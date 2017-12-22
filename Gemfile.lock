@@ -2,12 +2,10 @@ PATH
   remote: .
   specs:
     irbrc (0.0.2)
-      highline (~> 1.7)
 
 GEM
   remote: https://rubygems.org/
   specs:
-    highline (1.7.10)
     minitest (5.10.3)
     rake (10.5.0)
 

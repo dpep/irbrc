@@ -1,5 +1,5 @@
 $LOAD_PATH.unshift 'lib'
-package_name = 'irbrc'
+package_name = File.realpath(File.dirname(__FILE__)).split('/').last
 require "#{package_name}"
 package = Object.const_get package_name.capitalize
 
@@ -16,7 +16,6 @@ Gem::Specification.new do |s|
   s.files       = Dir.glob('lib/**/*')
   s.test_files  = Dir.glob('test/**/test_*')
 
-  s.add_runtime_dependency 'highline', '~> 1.7'
   s.add_development_dependency 'rake', '~> 10'
   s.add_development_dependency 'minitest', '~> 5'
 end
