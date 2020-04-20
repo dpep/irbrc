@@ -6,16 +6,16 @@ PATH
 GEM
   remote: https://rubygems.org/
   specs:
-    minitest (5.10.3)
-    rake (10.5.0)
+    minitest (5.14.0)
+    rake (13.0.1)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
   irbrc!
-  minitest (~> 5)
-  rake (~> 10)
+  minitest
+  rake
 
 BUNDLED WITH
-   1.15.4
+   1.17.1
