@@ -2,7 +2,7 @@ require 'fileutils'
 
 
 module Irbrc
-  VERSION = '0.0.2'
+  VERSION = '0.0.3'
   BASE_DIR = [
     Dir.home,
     '.irb/rc',
@@ -18,13 +18,11 @@ module Irbrc
         if local_rc != global_rc
           load local_rc
         end
-      else
-        init
       end
     end
 
 
-    # Set up or fix this project's rc file and symlink.
+    # set up or fix this project's rc file and symlink
     def init
       if File.symlink? local_rc
         if ! File.exists? local_rc
@@ -36,13 +34,13 @@ module Irbrc
           FileUtils.mkpath File.dirname remote_rc
           File.rename local_rc, remote_rc
         end
-      elsif ! File.exists? remote_rc and agree('Create irbrc')
+      elsif ! realpath remote_rc and agree('Create irbrc')
         # create new rc file
         create_rc
       end
 
       # link remote rc
-      if ! File.exists? local_rc and File.exists? remote_rc
+      if ! File.exists? local_rc and realpath remote_rc
         link_rc
       end
 
@@ -50,63 +48,6 @@ module Irbrc
       git_ignore if is_git?
 
       nil
-    end
-
-
-    # add auto-load to ~/.irbrc
-    def init_global_rc
-      require_cmd = "require 'irbrc'"
-
-      add_required = if File.exists? global_rc
-        add_msg = "Add `#{require_cmd}` to #{global_rc}"
-        File.read(global_rc) !~ /\W#{require_cmd}\W/ and agree(add_msg)
-      else
-        true
-      end
-
-      if add_required
-        File.open(global_rc, 'a') do |fh|
-          fh.write "\n"
-          fh.write "# load per project .irbrc\n"
-          fh.write "#{require_cmd}\n"
-          fh.write "load_rc\n\n"
-        end
-      end
-    end
-
-
-    def git_ignore
-      ignore_path = [
-        project_root,
-        '.git',
-        'info',
-        'exclude'
-      ].join File::SEPARATOR
-      add_required = if File.exists? ignore_path
-        msg = "Add .irbrc to #{ignore_path}"
-        File.read(ignore_path) !~ /\W\.irbrc\W/ and agree(msg)
-      else
-        add_required = true
-      end
-
-      if add_required
-        File.open(ignore_path, 'a') do |fh|
-          fh.write "\n.irbrc\n"
-        end
-      end
-    end
-
-
-    def localize
-      if File.symlink? local_rc
-        unlink local_rc
-      end
-
-      if File.exists? local_rc
-        unlink local_rc if agree "Overwrite local rc: #{local_rc}"
-      end
-
-      File.rename remote_rc, local_rc unless File.exists? local_rc
     end
 
 
@@ -127,7 +68,6 @@ module Irbrc
       else
         "# IRBRC"
       end
-
 
       File.open(remote_rc, 'w') do |fh|
         fh.write "#{msg}\n\n"
@@ -154,6 +94,49 @@ module Irbrc
     end
 
 
+    # Ensure ~/.irbrc loads Irbrc upon irb start.
+    def init_global_rc
+      require_cmd = "require 'irbrc'"
+
+      add_required = if File.exists? global_rc
+        add_msg = "Add `#{require_cmd}` to #{global_rc}"
+        File.read(global_rc) !~ /\W#{require_cmd}\W/ and agree(add_msg)
+      else
+        true
+      end
+
+      if add_required
+        File.open(global_rc, 'a') do |fh|
+          fh.write "\n"
+          fh.write "# load per project .irbrc\n"
+          fh.write "#{require_cmd}\n"
+          fh.write "load_rc\n\n"
+        end
+      end
+    end
+
+
+    # Ensure git ignores rc file.
+    def git_ignore
+      ignore_path = [
+        project_root,
+        '.git',
+        'info',
+        'exclude'
+      ].join File::SEPARATOR
+      add_ignore = if File.exists? ignore_path
+        msg = "Add .irbrc to #{ignore_path}"
+        File.read(ignore_path) !~ /\W\.irbrc\W/ and agree(msg)
+      end
+
+      if add_ignore
+        File.open(ignore_path, 'a') do |fh|
+          fh.write "\n.irbrc\n"
+        end
+      end
+    end
+
+
     def remote_rc
       if is_git?
         repo = parse_repo
@@ -172,7 +155,8 @@ module Irbrc
       str = git_cmd "remote -v" unless str
 
       repos = str.split("\n").map(&:split).map do |line|
-        next unless line.first.match(/^origin/)
+        next unless line.first == "origin"
+        next unless line.last == "(fetch)"
 
         source, repo = line[1].split ':'
         source.sub!(/^.*@/, '')
@@ -193,10 +177,7 @@ module Irbrc
 
 
     def local_rc
-      [
-        project_root,
-        '.irbrc'
-      ].join File::SEPARATOR
+      [ project_root, '.irbrc' ].join File::SEPARATOR
     end
 
 
@@ -241,38 +222,32 @@ module Irbrc
 
 
     def realpath path
-      File.realpath path if File.exists? path
+      File.realpath path if path and File.exists? path
     end
 
 
-    @@is_git = {}
-    def is_git? path = Dir.pwd
-      is_git = @@is_git[path]
-
-      if is_git.nil?
-        # not cached yet
-        is_git = begin
-          parse_repo
-        rescue Exception
-          nil
-        end
-
-        if is_git
-          dir = git_cmd 'rev-parse --show-toplevel'
-        else
-          dir = path
-        end
-
-        @@is_git[dir] = is_git
-      end
-
-      is_git
+    def is_git?
+      !! git_cmd('status --short')
     end
 
 
     def git_cmd cmd
       res = `git #{cmd} 2>/dev/null`.chomp
       res.empty? ? nil : res
+    end
+
+
+    # use local rc file instead of symlink
+    def localize
+      if File.symlink? local_rc
+        unlink local_rc
+      end
+
+      if File.exists? local_rc
+        unlink local_rc if agree "Overwrite local rc: #{local_rc}"
+      end
+
+      File.rename remote_rc, local_rc unless File.exists? local_rc
     end
 
 
