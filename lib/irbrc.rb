@@ -13,29 +13,36 @@ module Irbrc
 
 
     def load_rc
-      if rc_path
-        init unless File.exists? rc_path
-
-        if File.exists? rc_path and rc_path != global_rc
-          load rc_path
+      if File.exists? local_rc
+        # avoid circular reload
+        if local_rc != global_rc
+          load local_rc
         end
+      else
+        init
       end
     end
 
 
+    # Set up or fix this project's rc file and symlink.
     def init
-      if File.exists? local_rc
-        if rc_path == File.realpath(local_rc)
-          # already linked, no-op
-        elsif agree("Move existing rc: #{local_rc}")
-          FileUtils.mkpath File.dirname rc_path
-          File.rename local_rc, rc_path
-          link_rc
-        else
-          link_rc reverse: true
+      if File.symlink? local_rc
+        if ! File.exists? local_rc
+          # clean up bad symlink
+          unlink local_rc
         end
-      elsif agree('Create irbrc')
-        create_rc unless File.exists? rc_path
+      elsif File.exists? local_rc
+        if agree("Move local rc: mv #{local_rc} #{remote_rc}")
+          FileUtils.mkpath File.dirname remote_rc
+          File.rename local_rc, remote_rc
+        end
+      elsif ! File.exists? remote_rc and agree('Create irbrc')
+        # create new rc file
+        create_rc
+      end
+
+      # link remote rc
+      if ! File.exists? local_rc and File.exists? remote_rc
         link_rc
       end
 
@@ -91,31 +98,29 @@ module Irbrc
 
 
     def localize
+      if File.symlink? local_rc
+        unlink local_rc
+      end
+
       if File.exists? local_rc
-        if File.realpath(local_rc) == rc_path
-          unlink local_rc
-        else
-          unlink local_rc if agree "Overwrite local rc: #{local_rc}"
-        end
+        unlink local_rc if agree "Overwrite local rc: #{local_rc}"
       end
 
-      File.rename rc_path, local_rc unless File.exists? local_rc
+      File.rename remote_rc, local_rc unless File.exists? local_rc
     end
 
 
-    def remove_rc
-      unlink rc_path, local_rc
-    end
+    def create_rc
+      path = remote_rc or local_rc
 
-
-    def create_rc opts = {}
-      unlink rc_path if opts[:force]
-
-      if File.exists? rc_path
-        raise Exception.new "rc file already exists: #{rc_path}"
+      if File.exists? path
+        raise Exception.new "rc file already exists: #{path}"
       end
 
-      FileUtils.mkpath File.dirname rc_path
+      if remote_rc
+        FileUtils.mkpath File.dirname remote_rc
+      end
+
       msg = if is_git?
         repo = parse_repo
         "# IRBRC for #{parse_repo[:source]}:#{repo[:repo]}\n"
@@ -124,7 +129,7 @@ module Irbrc
       end
 
 
-      File.open(rc_path, 'w') do |fh|
+      File.open(remote_rc, 'w') do |fh|
         fh.write "#{msg}\n\n"
       end
 
@@ -132,31 +137,33 @@ module Irbrc
     end
 
 
+    def remove
+      if agree "remove rc file"
+        unlink local_rc, remote_rc
+      end
+    end
+
+
     def link_rc opts = {}
-      if opts[:reverse]
-        unlink rc_path if opts[:force]
-        File.symlink File.realpath(local_rc), rc_path
-      else
-        if realpath(local_rc) != realpath(rc_path)
-          unlink local_rc if opts[:force]
-          File.symlink rc_path, local_rc
-        end
+      if remote_rc and realpath(local_rc) != remote_rc
+        unlink local_rc if opts[:force]
+        File.symlink remote_rc, local_rc
       end
 
       nil
     end
 
 
-    def rc_path
+    def remote_rc
       if is_git?
         repo = parse_repo
         [
           BASE_DIR,
           repo[:source],
-          repo[:repo].gsub(/#{File::SEPARATOR}/, '.') + '.rc',
+          repo[:repo].gsub(/#{File::SEPARATOR}/, '.') + '.rb',
         ].join File::SEPARATOR
       else
-        local_rc
+        nil
       end
     end
 
@@ -165,11 +172,11 @@ module Irbrc
       str = git_cmd "remote -v" unless str
 
       repos = str.split("\n").map(&:split).map do |line|
-        next unless line.first.match /^origin/
+        next unless line.first.match(/^origin/)
 
         source, repo = line[1].split ':'
-        source.sub! /^.*@/, ''
-        source.sub! /\.(com|org)$/, ''
+        source.sub!(/^.*@/, '')
+        source.sub!(/\.(com|org)$/, '')
 
         {
           source: source,
@@ -199,7 +206,7 @@ module Irbrc
 
 
     def project_root
-      git_cmd("rev-parse --show-toplevel") || Dir.pwd
+       git_cmd("rev-parse --show-toplevel") || Dir.pwd
     end
 
 
@@ -244,10 +251,18 @@ module Irbrc
 
       if is_git.nil?
         # not cached yet
-        dir = `git rev-parse --show-toplevel 2>/dev/null`.chomp
-        is_git = !dir.empty?
+        is_git = begin
+          parse_repo
+        rescue Exception
+          nil
+        end
 
-        dir = is_git ? dir : path
+        if is_git
+          dir = git_cmd 'rev-parse --show-toplevel'
+        else
+          dir = path
+        end
+
         @@is_git[dir] = is_git
       end
 
@@ -256,7 +271,8 @@ module Irbrc
 
 
     def git_cmd cmd
-      `git #{cmd} 2>/dev/null`.chomp if is_git?
+      res = `git #{cmd} 2>/dev/null`.chomp
+      res.empty? ? nil : res
     end
 
 
