@@ -30,29 +30,29 @@ module Irbrc
           unlink local_rc
         end
       elsif File.exists? local_rc
-        if agree("Move local rc: mv #{local_rc} #{remote_rc}")
+        if remote_rc and agree("Move local rc: mv #{local_rc} #{remote_rc}")
           FileUtils.mkpath File.dirname remote_rc
           File.rename local_rc, remote_rc
         end
-      elsif ! realpath remote_rc and agree('Create irbrc')
+      elsif ! realpath remote_rc and agree('Create irbrc', default: true)
         # create new rc file
         create_rc
       end
 
-      # link remote rc
       if ! File.exists? local_rc and realpath remote_rc
-        link_rc
+        # symlink remote rc
+        File.symlink remote_rc, local_rc
       end
 
       init_global_rc
-      git_ignore if is_git?
+      git_ignore if git_env?
 
       nil
     end
 
 
     def create_rc
-      path = remote_rc or local_rc
+      path = remote_rc || local_rc
 
       if File.exists? path
         raise Exception.new "rc file already exists: #{path}"
@@ -62,35 +62,15 @@ module Irbrc
         FileUtils.mkpath File.dirname remote_rc
       end
 
-      msg = if is_git?
-        repo = parse_repo
+      msg = if repo = parse_repo
         "# IRBRC for #{parse_repo[:source]}:#{repo[:repo]}\n"
       else
         "# IRBRC"
       end
 
-      File.open(remote_rc, 'w') do |fh|
+      File.open(path, 'w') do |fh|
         fh.write "#{msg}\n\n"
       end
-
-      nil
-    end
-
-
-    def remove
-      if agree "remove rc file"
-        unlink local_rc, remote_rc
-      end
-    end
-
-
-    def link_rc opts = {}
-      if remote_rc and realpath(local_rc) != remote_rc
-        unlink local_rc if opts[:force]
-        File.symlink remote_rc, local_rc
-      end
-
-      nil
     end
 
 
@@ -116,7 +96,7 @@ module Irbrc
     end
 
 
-    # Ensure git ignores rc file.
+    # Add rc file to git ignore.
     def git_ignore
       ignore_path = [
         project_root,
@@ -124,9 +104,10 @@ module Irbrc
         'info',
         'exclude'
       ].join File::SEPARATOR
+
       add_ignore = if File.exists? ignore_path
         msg = "Add .irbrc to #{ignore_path}"
-        File.read(ignore_path) !~ /\W\.irbrc\W/ and agree(msg)
+        File.read(ignore_path) !~ /\W\.irbrc\W/ and agree(msg, default: true)
       end
 
       if add_ignore
@@ -138,8 +119,9 @@ module Irbrc
 
 
     def remote_rc
-      if is_git?
-        repo = parse_repo
+      repo = parse_repo
+
+      if repo
         [
           BASE_DIR,
           repo[:source],
@@ -153,6 +135,7 @@ module Irbrc
 
     def parse_repo str = nil
       str = git_cmd "remote -v" unless str
+      return unless str
 
       repos = str.split("\n").map(&:split).map do |line|
         next unless line.first == "origin"
@@ -177,7 +160,10 @@ module Irbrc
 
 
     def local_rc
-      [ project_root, '.irbrc' ].join File::SEPARATOR
+      [
+        project_root || Dir.pwd,
+        '.irbrc'
+      ].join File::SEPARATOR
     end
 
 
@@ -187,7 +173,7 @@ module Irbrc
 
 
     def project_root
-       git_cmd("rev-parse --show-toplevel") || Dir.pwd
+       git_cmd("rev-parse --show-toplevel")
     end
 
 
@@ -226,7 +212,7 @@ module Irbrc
     end
 
 
-    def is_git?
+    def git_env?
       !! git_cmd('status --short')
     end
 
@@ -234,6 +220,14 @@ module Irbrc
     def git_cmd cmd
       res = `git #{cmd} 2>/dev/null`.chomp
       res.empty? ? nil : res
+    end
+
+
+    # remove rc file
+    def remove
+      if agree "remove rc file"
+        unlink local_rc, remote_rc
+      end
     end
 
 
