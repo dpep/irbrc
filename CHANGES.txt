@@ -1,0 +1,6 @@
+v0.0.2, 2020-05-07
+    c2d1c79 better edge case handling, clean up
+    0082c3e eject init from load_rc, cleanup
+    48b786c clean up init logic
+    3fcd0e7 Update README.md
+    da7849c upgrade libs

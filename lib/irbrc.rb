@@ -2,7 +2,7 @@ require 'fileutils'
 
 
 module Irbrc
-  VERSION = '0.0.3'
+  VERSION = '0.0.2'
   BASE_DIR = [
     Dir.home,
     '.irb/rc',
