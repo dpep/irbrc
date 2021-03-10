@@ -9,8 +9,8 @@ Gem::Specification.new do |s|
   s.version     = package.const_get 'VERSION'
   s.authors     = ['Daniel Pepper']
   s.summary     = package.to_s
-  s.description = 'irbrc loader'
-  s.homepage    = "https://github.com/dpep/rb_#{package_name}"
+  s.description = 'irb rc loader'
+  s.homepage    = "https://github.com/dpep/#{package_name}"
   s.license     = 'MIT'
 
   s.files       = Dir.glob('lib/**/*')
