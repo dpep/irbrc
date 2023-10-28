@@ -1,0 +1,26 @@
+name: Ruby
+
+on:
+  push:
+    branches: [ main ]
+    paths-ignore:
+    - '**.md'
+  pull_request:
+    types: [ opened, edited, synchronize ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: clone ${{ github.repository }}
+        uses: actions/checkout@v4
+      - name: setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.0"
+          bundler-cache: true
+      - name: run tests
+        run: bundle exec rspec
+      - name: upload code coverage
+        uses: codecov/codecov-action@v3
