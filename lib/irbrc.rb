@@ -202,13 +202,13 @@ module Irbrc
 
     def unlink *paths
       paths.select do |path|
-        1 == File.unlink(path) if File.exists? path or File.symlink? path
+        1 == File.unlink(path) if File.exists?(path) or File.symlink?(path)
       end
     end
 
 
     def realpath path
-      File.realpath path if path and File.exists? path
+      File.realpath(path) if path and File.exists?(path)
     end
 
 
