@@ -119,16 +119,13 @@ module Irbrc
 
 
     def remote_rc
-      repo = parse_repo
+      if repo = parse_repo
+        name = repo[:repo].gsub(/\.git$/, '').gsub(/#{File::SEPARATOR}/, '.')
 
-      if repo
         [
           BASE_DIR,
-          repo[:source],
-          repo[:repo].gsub(/#{File::SEPARATOR}/, '.') + '.rb',
+          "#{repo[:source]}.#{name}.rb",
         ].join File::SEPARATOR
-      else
-        nil
       end
     end
 
