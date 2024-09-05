@@ -21,7 +21,7 @@ module Irbrc
   # set up or fix this project's rc file and symlink
   def init
     if File.symlink?(local_rc)
-      if ! File.exists?(local_rc)
+      unless File.exists?(local_rc)
         # clean up bad symlink
         unlink(local_rc)
       end
