@@ -13,7 +13,7 @@ module Irbrc
 
 
     def load_rc
-      if File.exists? local_rc
+      if File.exists?(local_rc)
         # avoid circular reload
         if local_rc != global_rc
           load local_rc
@@ -24,24 +24,24 @@ module Irbrc
 
     # set up or fix this project's rc file and symlink
     def init
-      if File.symlink? local_rc
-        if ! File.exists? local_rc
+      if File.symlink?(local_rc)
+        if ! File.exists?(local_rc)
           # clean up bad symlink
           unlink local_rc
         end
-      elsif File.exists? local_rc
+      elsif File.exists?(local_rc)
         if remote_rc and agree("Move local rc: mv #{local_rc} #{remote_rc}")
-          FileUtils.mkpath File.dirname remote_rc
-          File.rename local_rc, remote_rc
+          FileUtils.mkpath(File.dirname(remote_rc))
+          File.rename(local_rc, remote_rc)
         end
-      elsif ! realpath remote_rc and agree('Create irbrc', default: true)
+      elsif ! realpath(remote_rc) && agree('Create irbrc', default: true)
         # create new rc file
         create_rc
       end
 
-      if ! File.exists? local_rc and realpath remote_rc
+      if ! File.exists?(local_rc) && realpath(remote_rc)
         # symlink remote rc
-        File.symlink remote_rc, local_rc
+        File.symlink(remote_rc, local_rc)
       end
 
       init_global_rc
@@ -105,7 +105,7 @@ module Irbrc
         'exclude'
       ].join File::SEPARATOR
 
-      add_ignore = if File.exists? ignore_path
+      add_ignore = if File.exists?(ignore_path)
         msg = "Add .irbrc to #{ignore_path}"
         File.read(ignore_path) !~ /\W\.irbrc\W/ and agree(msg, default: true)
       end
@@ -130,7 +130,7 @@ module Irbrc
     end
 
 
-    def parse_repo str = nil
+    def parse_repo(str = nil)
       str = git_cmd "remote -v" unless str
       return unless str
 
@@ -174,11 +174,11 @@ module Irbrc
     end
 
 
-    def agree msg, opts = {}
+    def agree(msg, **opts)
       # ask yes or no question and return true/false
       # optional 'default' arg
 
-      default = if opts.has_key? :default
+      default = if opts.has_key?(:default)
         opts[:default] ? 'y' : 'n'
       else
         ''
@@ -199,7 +199,7 @@ module Irbrc
 
     def unlink *paths
       paths.select do |path|
-        1 == File.unlink(path) if File.exists?(path) or File.symlink?(path)
+        1 == File.unlink(path) if File.exists?(path) || File.symlink?(path)
       end
     end
 
@@ -223,7 +223,7 @@ module Irbrc
     # remove rc file
     def remove
       if agree "remove rc file"
-        unlink local_rc, remote_rc
+        unlink(local_rc, remote_rc)
       end
     end
 
@@ -231,14 +231,14 @@ module Irbrc
     # use local rc file instead of symlink
     def localize
       if File.symlink? local_rc
-        unlink local_rc
+        unlink(local_rc)
       end
 
       if File.exists? local_rc
-        unlink local_rc if agree "Overwrite local rc: #{local_rc}"
+        unlink local_rc if agree("Overwrite local rc: #{local_rc}")
       end
 
-      File.rename remote_rc, local_rc unless File.exists? local_rc
+      File.rename(remote_rc, local_rc) unless File.exists?(local_rc)
     end
 
 
