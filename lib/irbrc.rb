@@ -97,7 +97,9 @@ module Irbrc
 
 
     # Add rc file to git ignore.
-    def git_ignore
+    def git_ignore(filename = '.irbrc')
+      return if system("git check-ignore -q #{filename}")
+
       ignore_path = [
         project_root,
         '.git',
@@ -105,14 +107,11 @@ module Irbrc
         'exclude'
       ].join File::SEPARATOR
 
-      add_ignore = if File.exists?(ignore_path)
-        msg = "Add .irbrc to #{ignore_path}"
-        File.read(ignore_path) !~ /\W\.irbrc\W/ and agree(msg, default: true)
-      end
+      # return unless File.exists?(ignore_path)
 
-      if add_ignore
+      if agree("Add #{filename} to #{ignore_path}", default: true)
         File.open(ignore_path, 'a') do |fh|
-          fh.write "\n.irbrc\n"
+          fh.write "\n#{filename}\n"
         end
       end
     end
