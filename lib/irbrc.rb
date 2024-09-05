@@ -27,7 +27,7 @@ module Irbrc
       if File.symlink?(local_rc)
         if ! File.exists?(local_rc)
           # clean up bad symlink
-          unlink local_rc
+          unlink(local_rc)
         end
       elsif File.exists?(local_rc)
         if remote_rc and agree("Move local rc: mv #{local_rc} #{remote_rc}")
@@ -54,12 +54,12 @@ module Irbrc
     def create_rc
       path = remote_rc || local_rc
 
-      if File.exists? path
+      if File.exists?(path)
         raise Exception.new "rc file already exists: #{path}"
       end
 
       if remote_rc
-        FileUtils.mkpath File.dirname remote_rc
+        FileUtils.mkpath(File.dirname(remote_rc))
       end
 
       msg = if repo = parse_repo
@@ -78,7 +78,7 @@ module Irbrc
     def init_global_rc
       require_cmd = "require 'irbrc'"
 
-      add_required = if File.exists? global_rc
+      add_required = if File.exists?(global_rc)
         add_msg = "Add `#{require_cmd}` to #{global_rc}"
         File.read(global_rc) !~ /\W#{require_cmd}\W/ and agree(add_msg)
       else
@@ -130,7 +130,7 @@ module Irbrc
 
 
     def parse_repo(str = nil)
-      str = git_cmd "remote -v" unless str
+      str = git_cmd("remote -v") unless str
       return unless str
 
       repos = str.split("\n").map(&:split).map do |line|
@@ -184,7 +184,7 @@ module Irbrc
       end
 
       loop do
-        puts "#{msg.chomp '?'}?  %s" % '[y/n]'.sub(default, default.upcase)
+        puts "#{msg.chomp('?')}?  %s" % '[y/n]'.sub(default, default.upcase)
         res = gets.strip.downcase
         res = default if res.empty?
         if ['y', 'yes', 'n', 'no'].include? res
@@ -196,14 +196,14 @@ module Irbrc
     end
 
 
-    def unlink *paths
+    def unlink(*paths)
       paths.select do |path|
         1 == File.unlink(path) if File.exists?(path) || File.symlink?(path)
       end
     end
 
 
-    def realpath path
+    def realpath(path)
       File.realpath(path) if path and File.exists?(path)
     end
 
@@ -221,7 +221,7 @@ module Irbrc
 
     # remove rc file
     def remove
-      if agree "remove rc file"
+      if agree("remove rc file")
         unlink(local_rc, remote_rc)
       end
     end
@@ -229,12 +229,12 @@ module Irbrc
 
     # use local rc file instead of symlink
     def localize
-      if File.symlink? local_rc
+      if File.symlink?(local_rc)
         unlink(local_rc)
       end
 
-      if File.exists? local_rc
-        unlink local_rc if agree("Overwrite local rc: #{local_rc}")
+      if File.exists?(local_rc)
+        unlink(local_rc) if agree("Overwrite local rc: #{local_rc}")
       end
 
       File.rename(remote_rc, local_rc) unless File.exists?(local_rc)
