@@ -13,11 +13,8 @@ module Irbrc
 
 
     def load_rc
-      if File.exists?(local_rc)
-        # avoid circular reload
-        if local_rc != global_rc
-          load local_rc
-        end
+      if File.exists?(local_rc) && local_rc != global_rc
+        load local_rc
       end
     end
 
