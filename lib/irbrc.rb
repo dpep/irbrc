@@ -12,7 +12,7 @@ module Irbrc
 
 
   def load_rc
-    if File.exists?(local_rc) && local_rc != global_rc
+    if File.exist?(local_rc) && local_rc != global_rc
       load local_rc
     end
   end
@@ -21,11 +21,11 @@ module Irbrc
   # set up or fix this project's rc file and symlink
   def init
     if File.symlink?(local_rc)
-      unless File.exists?(local_rc)
+      unless File.exist?(local_rc)
         # clean up bad symlink
         unlink(local_rc)
       end
-    elsif File.exists?(local_rc)
+    elsif File.exist?(local_rc)
       if remote_rc and agree("Move local rc: mv #{local_rc} #{remote_rc}")
         FileUtils.mkpath(File.dirname(remote_rc))
         File.rename(local_rc, remote_rc)
@@ -35,7 +35,7 @@ module Irbrc
       create_rc
     end
 
-    if ! File.exists?(local_rc) && realpath(remote_rc)
+    if ! File.exist?(local_rc) && realpath(remote_rc)
       # symlink remote rc
       File.symlink(remote_rc, local_rc)
     end
@@ -50,7 +50,7 @@ module Irbrc
   def create_rc
     path = remote_rc || local_rc
 
-    if File.exists?(path)
+    if File.exist?(path)
       raise Exception.new "rc file already exists: #{path}"
     end
 
@@ -74,7 +74,7 @@ module Irbrc
   def init_global_rc
     require_cmd = "require 'irbrc'"
 
-    add_required = if File.exists?(global_rc)
+    add_required = if File.exist?(global_rc)
       add_msg = "Add `#{require_cmd}` to #{global_rc}"
       File.read(global_rc) !~ /\W#{require_cmd}\W/ and agree(add_msg)
     else
@@ -103,7 +103,7 @@ module Irbrc
       'exclude'
     ].join File::SEPARATOR
 
-    # return unless File.exists?(ignore_path)
+    # return unless File.exist?(ignore_path)
 
     if agree("Add #{filename} to #{ignore_path}", default: true)
       File.open(ignore_path, 'a') do |fh|
@@ -194,13 +194,13 @@ module Irbrc
 
   def unlink(*paths)
     paths.select do |path|
-      1 == File.unlink(path) if File.exists?(path) || File.symlink?(path)
+      1 == File.unlink(path) if File.exist?(path) || File.symlink?(path)
     end
   end
 
 
   def realpath(path)
-    File.realpath(path) if path and File.exists?(path)
+    File.realpath(path) if path and File.exist?(path)
   end
 
 
@@ -229,11 +229,11 @@ module Irbrc
       unlink(local_rc)
     end
 
-    if File.exists?(local_rc)
+    if File.exist?(local_rc)
       unlink(local_rc) if agree("Overwrite local rc: #{local_rc}")
     end
 
-    File.rename(remote_rc, local_rc) unless File.exists?(local_rc)
+    File.rename(remote_rc, local_rc) unless File.exist?(local_rc)
   end
 end
 
