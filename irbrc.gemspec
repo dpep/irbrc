@@ -1,11 +1,10 @@
 require_relative 'lib/irbrc'
-package = Irbrc
 
 Gem::Specification.new do |s|
-  s.name        = File.basename(__FILE__).split(".")[0]
-  s.version     = package.const_get 'VERSION'
+  s.name        = 'irbrc'
+  s.version     = Irbrc::VERSION
   s.authors     = ['Daniel Pepper']
-  s.summary     = package.to_s
+  s.summary     = 'Irbrc'
   s.description = 'irb rc loader'
   s.homepage    = "https://github.com/dpep/irbrc"
   s.license     = 'MIT'
