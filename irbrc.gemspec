@@ -8,6 +8,7 @@ Gem::Specification.new do |s|
   s.description = 'irb rc loader'
   s.homepage    = "https://github.com/dpep/irbrc"
   s.license     = 'MIT'
+  s.required_ruby_version = '>= 3.2'
   s.files       = `git ls-files * ':!:spec'`.split("\n")
 
   s.add_development_dependency "byebug"
