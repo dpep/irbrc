@@ -25,7 +25,7 @@ GEM
       diff-lcs (>= 1.2.0, < 2.0)
       rspec-support (~> 3.13.0)
     rspec-support (3.13.7)
-    simplecov (1.2.0)
+    simplecov (1.3.2)
 
 PLATFORMS
   arm64-darwin-23
@@ -37,7 +37,7 @@ DEPENDENCIES
   byebug
   irbrc!
   rspec
-  simplecov
+  simplecov (>= 1)
 
 BUNDLED WITH
    2.4.20
