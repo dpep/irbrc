@@ -11,7 +11,7 @@ Gem::Specification.new do |s|
   s.required_ruby_version = '>= 3.2'
   s.files       = `git ls-files * ':!:spec'`.split("\n")
 
-  s.add_development_dependency "byebug"
+  s.add_development_dependency "debug"
   s.add_development_dependency "rspec"
-  s.add_development_dependency "simplecov"
+  s.add_development_dependency "simplecov", ">= 1"
 end

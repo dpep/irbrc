@@ -6,10 +6,29 @@ PATH
 GEM
   remote: https://rubygems.org/
   specs:
-    byebug (13.0.0)
-      reline (>= 0.6.0)
+    date (3.6.0)
+    debug (1.11.1)
+      irb (~> 1.10)
+      reline (>= 0.3.8)
     diff-lcs (1.6.2)
+    erb (6.0.7)
     io-console (0.9.5)
+    irb (1.19.0)
+      pp (>= 0.6.0)
+      prism (>= 1.3.0)
+      rdoc (>= 4.0.0)
+      reline (>= 0.4.2)
+    pp (0.6.4)
+      prettyprint
+    prettyprint (0.2.1)
+    prism (1.9.0)
+    psych (5.5.0)
+      date
+      stringio
+    rdoc (7.2.0)
+      erb
+      psych (>= 4.0.0)
+      tsort
     reline (0.7.0)
       io-console (~> 0.5)
     rspec (3.13.2)
@@ -26,6 +45,8 @@ GEM
       rspec-support (~> 3.13.0)
     rspec-support (3.13.7)
     simplecov (1.2.0)
+    stringio (3.2.0)
+    tsort (0.2.0)
 
 PLATFORMS
   arm64-darwin-23
@@ -34,10 +55,10 @@ PLATFORMS
   x86_64-linux
 
 DEPENDENCIES
-  byebug
+  debug
   irbrc!
   rspec
-  simplecov
+  simplecov (>= 1)
 
 BUNDLED WITH
    2.4.20
